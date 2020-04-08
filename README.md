@@ -15,10 +15,14 @@ Run
 
 Number of new infected (delta) per day with the last day being 2020-04-07
 
-  ./covid-19_data.py --tags="China,US,Italy,Germany,France,Spain" --delta --tmax=2020-04-07
+    ./covid-19_data.py --tags="China,US,Italy,Germany,France,Spain" --delta --tmax=2020-04-07
 
 Number of new deaths with the last day being 2020-04-07, cut at 500 maximum
 
-  ./covid-19_data.py --tags="China,US,Italy,Germany,France,Spain" --death --vmax=500
+    ./covid-19_data.py --tags="China,US,Italy,Germany,France,Spain" --death --vmax=500
+
+US data analysis of the New England states, Number of new infected per day, starting 2020-02-12 
+
+    ./covid-19_data.py --tags='Vermont,New Hampshire,Maine,Massachusetts,Connecticut,Rhode Island' --tmin 2020-02-12  --delta
 
 Etc.
