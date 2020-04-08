@@ -18,26 +18,34 @@ import sys,os,getopt
 #===================================================================================================
 
 def update_file(get_cmd,data_url,data_file):
-    print " Update the data file"
+    print " Update the data file: %s"%data_file
 
     cmd = "%s %s -O data/%s >& /dev/null"%(get_cmd,data_url,data_file)
     os.system(cmd)
     return
 
-def read_data(data_file,delta):
-    print " Reading the data"
+def read_data(data_file,delta,us):
+    print " Reading the data from: %s"%data_file
 
+    # set the offset
+    n_offset = 4
+    n_tag = 1
+    if us:
+        n_offset = 12
+        n_tag = 6
+
+    # loop the file
     with open("data/%s"%data_file,'r') as csvfile:
         ts_file = csv.reader(csvfile, delimiter=',')
         times = []
         values = {}
         for row in ts_file:
             if len(times) == 0:
-                times = row[4:]
+                times = row[n_offset:]
                 continue
 
             # read this line as the next timeseries values, might have to be added to existing
-            tag = row[1]
+            tag = row[n_tag]
 
             # find existing series or create empty one
             if tag in values.keys():
@@ -47,7 +55,7 @@ def read_data(data_file,delta):
                 
             # loop through the values and convert to integer
             tmp_values = []
-            for value in row[4:]:
+            for value in row[n_offset:]:
                 tmp_values.append(int(value))
 
             series = [x+y for x,y in zip(series,tmp_values)]
@@ -120,13 +128,15 @@ web_site = "https://raw.githubusercontent.com"
 web_dir = "CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series"
 web_file_confirmed = "time_series_covid19_confirmed_global.csv"
 web_file_deaths = "time_series_covid19_deaths_global.csv"
+web_file_confirmed_us = "time_series_covid19_confirmed_US.csv"
+web_file_deaths_us = "time_series_covid19_deaths_US.csv"
 
 #===================================================================================================
 # MAIN
 #===================================================================================================
 # Define string to explain usage of the script
-usage  = "\nUsage: covid-19_data.py --tags=tag1,tag43,tag300 [ --tmin=<first-day> --tmax=<last-day> --deaths --delta --logy --logx ]\n"
-valid = ['tags=','tmin=','tmax=','vmax=','debug','death','delta','logy','logx','help']
+usage  = "\nUsage: covid-19_data.py --tags=tag1,tag43,tag300 [ --tmin=<first-day> --tmax=<last-day> --vmax=<nmax> --deaths --delta --logy --logx --us ]\n"
+valid = ['tags=','tmin=','tmax=','vmax=','debug','death','delta','logy','logx','us','help']
 try:
     opts, args = getopt.getopt(sys.argv[1:], "", valid)
 except getopt.GetoptError, ex:
@@ -143,6 +153,7 @@ death = False
 delta = False
 logx = False
 logy = False
+us = False
 for opt, arg in opts:
     if opt == "--help":
         print usage
@@ -165,20 +176,30 @@ for opt, arg in opts:
         logx = True
     if opt == "--logy":
         logy = True
+    if opt == "--us":
+        us = True
 
 # determine which input
 value_name = 'Infected'
-web_file = web_file_confirmed
 if death:
     value_name = 'Deaths'
-    web_file = web_file_deaths
+
+if us:
+    web_file = web_file_confirmed_us
+    if death:
+        web_file = web_file_deaths_us
+else:
+    web_file = web_file_confirmed
+    if death:
+        web_file = web_file_deaths
+    
 data_url = "%s/%s/%s"%(web_site,web_dir,web_file)
 get_cmd = "wget"
 
 # deal with the input data
 update_file(get_cmd,data_url,web_file)
-(times,values) = read_data(web_file,delta)
-
+(times,values) = read_data(web_file,delta,us)
+print values
 # create the data frames and select the data from our container
 times = pd.DatetimeIndex(times)
 
