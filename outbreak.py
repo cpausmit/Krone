@@ -8,6 +8,8 @@ import numpy
 # SIR implementation readup at:
 #    https://towardsdatascience.com/infection-modeling-part-1-87e74645568a
 #
+# The detailed model I am just making it up on the way.
+#
 #---------------------------------------------------------------------------------------------------
 
 
@@ -241,11 +243,18 @@ class Population:
         # loop through infected people once
         for id in self.infected:
             p = self.list[id]
-            n_contact_today = int(p.social_type.avg_contact.next())
-            for i in range(1,n_contact_today):
-                iid = (id + numpy.random.randint(0,p.social_type.n_family)) % (self.n())
+
+            contact_delta_indices = p.social_type.daily_exposure()
+            for did in contact_delta_indices:
+                iid = (id + did) % (self.n())
                 # expose this person
                 self.expose(iid,corona)
+                
+            #n_contact_today = int(p.social_type.avg_contact.next())
+            #for i in range(1,n_contact_today):
+            #    iid = (id + numpy.random.randint(0,p.social_type.n_family)) % (self.n())
+            #    # expose this person
+            #    self.expose(iid,corona)
 
             # increase number of days sick
             p.next_day()
@@ -301,7 +310,6 @@ class Social_type:
     # constructor
     #-----------------------------------------------------------------------------------------------
     def __init__(self,avg_contact,n_family,n_work,ratio_family=1):
-
         self.avg_contact = avg_contact
         self.n_family = n_family
         self.n_work = n_work
@@ -313,6 +321,25 @@ class Social_type:
     def summary(self):
         return " C:%s, NF:%d, NW:%d, RF:%f"%\
             (self.avg_contact.summary(),self.n_family,self.n_work,self.ratio_family)
+
+    #-----------------------------------------------------------------------------------------------
+    # Return string of social type.
+    #-----------------------------------------------------------------------------------------------
+    def daily_exposure(self):
+        ids = []
+
+        # how many encounters today?
+        nc = int(self.avg_contact.next())
+        
+        # now throw the indices for the encounters
+        for i in range(0,nc):
+            # determine family or work
+            if numpy.random.uniform()<self.ratio_family:
+                ids.append(numpy.random.randint(0,self.n_family))
+            else:
+                ids.append(numpy.random.randint(0,self.n_work))
+
+        return ids
 
 #---------------------------------------------------------------------------------------------------
 """
@@ -414,8 +441,8 @@ except getopt.GetoptError, ex:
 N_POPULATION = 6883000
 N_DAYS = 20
 I_INITIAL = 6620
-RECO_MEAN = 30
-RECO_STD = 8
+RECO_MEAN = 14
+RECO_STD = 5
 PI_INITIAL = 0.06
 PI_DECAY = 0.10
 DEATH_RATE = 0.04
@@ -460,7 +487,7 @@ for opt, arg in opts:
 # Propagate input
 
 corona = Pathogen(Rgvd(RECO_MEAN,RECO_STD,1),PI_INITIAL,PI_DECAY,DEATH_RATE)
-social_type = Social_type(Rgvd(EXPOSURE_AVG,EXPOSURE_STD,1),100,20,0.5)
+social_type = Social_type(Rgvd(EXPOSURE_AVG,EXPOSURE_STD,1),4,200,0.1)
 numpy.random.seed(seed=int(SEED))
 
 # Generate the population
