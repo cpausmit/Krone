@@ -31,7 +31,7 @@ def read_data(data_file,delta,us):
     n_offset = 4
     n_tag = 1
     if us:
-        n_offset = 12
+        n_offset = 11
         n_tag = 6
 
     # loop the file
@@ -130,13 +130,15 @@ web_file_confirmed = "time_series_covid19_confirmed_global.csv"
 web_file_deaths = "time_series_covid19_deaths_global.csv"
 web_file_confirmed_us = "time_series_covid19_confirmed_US.csv"
 web_file_deaths_us = "time_series_covid19_deaths_US.csv"
+web_file_confirmed_simus = "time_series_covid19_confirmed_SIMUS.csv"
+web_file_deaths_simus = "time_series_covid19_deaths_SIMUS.csv"
 
 #===================================================================================================
 # MAIN
 #===================================================================================================
 # Define string to explain usage of the script
 usage  = "\nUsage: covid-19_data.py --tags=tag1,tag43,tag300 [ --tmin=<first-day> --tmax=<last-day> --vmax=<nmax> --deaths --delta --logy --logx --us ]\n"
-valid = ['tags=','tmin=','tmax=','vmax=','debug','death','delta','logy','logx','us','help']
+valid = ['tags=','tmin=','tmax=','vmax=','debug','update','death','delta','logy','logx','us','sim','mc','help']
 try:
     opts, args = getopt.getopt(sys.argv[1:], "", valid)
 except getopt.GetoptError, ex:
@@ -149,11 +151,14 @@ tags = [ 'Germany' ]
 tmin = 0
 tmax = 0
 vmax = 0
+update = False
 death = False
 delta = False
 logx = False
 logy = False
 us = False
+sim = False
+mc = False
 for opt, arg in opts:
     if opt == "--help":
         print usage
@@ -170,6 +175,8 @@ for opt, arg in opts:
         vmax = int(arg)
     if opt == "--death":
         death = True
+    if opt == "--update":
+        update = True
     if opt == "--delta":
         delta = True
     if opt == "--logx":
@@ -178,6 +185,10 @@ for opt, arg in opts:
         logy = True
     if opt == "--us":
         us = True
+    if opt == "--sim":
+        sim = True
+    if opt == "--mc":
+        mc = True
 
 # determine which input
 value_name = 'Infected'
@@ -188,27 +199,49 @@ if us:
     web_file = web_file_confirmed_us
     if death:
         web_file = web_file_deaths_us
+elif sim:
+    web_file = web_file_confirmed_simus
+    if death:
+        web_file = web_file_deaths_simus
 else:
     web_file = web_file_confirmed
     if death:
         web_file = web_file_deaths
-    
+
+web_file_mc = web_file_confirmed_simus
+if death:
+    web_file_mc = web_file_deaths_simus
+
 data_url = "%s/%s/%s"%(web_site,web_dir,web_file)
 get_cmd = "wget"
 
 # deal with the input data
-update_file(get_cmd,data_url,web_file)
+if update:
+    update_file(get_cmd,data_url,web_file)
 (times,values) = read_data(web_file,delta,us)
-print values
+for tag in tags:
+    print times
+    print values[tag]
+    
+# just in case want MC
+if mc:
+    (times_mc,values_mc) = read_data(web_file_mc,delta,us)
+    print times_mc
+    print values_mc
+
 # create the data frames and select the data from our container
 times = pd.DatetimeIndex(times)
-
+if mc:
+    times_mc = pd.DatetimeIndex(times_mc)
+    
 # prepare the plot
 set_plot_style(logx,logy,delta,value_name)
 
 # plot
 for tag in tags:
     plt.errorbar(times, values[tag], yerr=np.sqrt(values[tag]), marker='o', label=tag)
+    if mc:
+        plt.errorbar(times_mc, values_mc[tag], yerr=0, label='MC')
                  
 if vmax != 0:
     ymax = vmax
