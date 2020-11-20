@@ -16,17 +16,21 @@ Run
 
 Number of new infected (delta) per day with the last day being 2020-04-07
 
-    ./covid-19_data.py --update --tags="China,US,Italy,Germany,France,Spain" --delta --tmax=2020-04-07
+    ./c19.py --update --tags="China,US,Italy,Germany,France,Spain" --delta --tmax=2020-04-07
 
 Number of new deaths with the last day being 2020-04-07, cut at 500 maximum
 
-    ./covid-19_data.py --update --tags="China,US,Italy,Germany,France,Spain" --death --vmax=500
+    ./c19.py --update --tags="China,US,Italy,Germany,France,Spain" --death --vmax=500
 
 US data analysis of the New England states, Number of new infected per day, starting 2020-02-12 
 
-    ./covid-19_data.py --update --us --tags='Vermont,New Hampshire,Maine,Massachusetts,Connecticut,Rhode Island' --tmin 2020-02-12  --delta
+    ./c19.py --update --us --tags='Vermont,New Hampshire,Maine,Massachusetts,Connecticut,Rhode Island' --tmin 2020-02-12  --delta
 
-Run a full outbreak simulation for MA and plot it comparing to the data from JHU. the outbreak.py script has a ton of parameters to tune the simulation. The gyst of such a comparison is given below:
+Population percentage of new infected over 7 day averages, starting March 15
+
+    ./c19.py --update --tags='Illinois,Massachusetts,Switzerland' --delta --combine 7 --relative --tmin 2020-03-15
+
+Run a full outbreak simulation for MA and plot it comparing to the data from JHU. The outbreak.py script has a ton of parameters to tune the simulation. The gyst of such a comparison is given below:
 
   ./outbreak.py --pi_initial=0.0295;./covid-19_data.py --tmin 2020-03-10 --tmax 2020-04-20 --us --tags="Massachusetts" --mc
 
