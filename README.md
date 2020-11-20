@@ -9,7 +9,8 @@ For installation please go to a place where you can find it back easily and proc
 
 * git clone https://github.com/cpausmit/Krone.git
 * sudo dnf install python-pandas python-numpy python-matplotlib
-
+* cd Krone
+* source ./setup.sh
 
 Run
 ---
