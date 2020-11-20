@@ -19,33 +19,15 @@ import datetime
 #===================================================================================================
 # HELPERS
 #===================================================================================================
-def chi2(imin,imax,values,values_mc):
-    chi2 = 0
-    for i in range(imin,imax+1):
-        delta = values[i]-values_mc[i-imin]
-        chi2 += delta*delta/values[i]
-    return chi2
-
-def find_xoverlap(times,times_mc):
-
-    imin_data = 0
-    if times_mc[0]>times[0]:
-        for time in times:
-            if time<times_mc[0]:
-                imin_data += 1
-
-
-    imax_data = len(times)-1
-
-    return imin_data,imax_data
-
 def find_xlimits(times,tmin,tmax):
     xmin = times[0]
     xmax = times[-1]
+
     if tmin != 0:
         xmin = tmin
     if tmax != 0:
         xmax = tmax
+
     return xmin,xmax
 
 def trim_times_series_ids(tmin,tmax,times):
@@ -74,8 +56,9 @@ def trim_times_series_ids(tmin,tmax,times):
         if imin == -1 and t>=time_min:
             imin = i
         if t<=time_max:
-            imax = i
+            imax = i+1
         if t>time_max:
+            imax = i+1
             break
         i += 1
 
@@ -83,13 +66,13 @@ def trim_times_series_ids(tmin,tmax,times):
     return imin,imax
 
 def update_file(get_cmd,data_url,data_file):
-    print " Update the data file: %s"%data_file
+    print(" Update the data file: %s"%data_file)
     cmd = "%s %s -O data/%s >& /dev/null"%(get_cmd,data_url,data_file)
     os.system(cmd)
     return
 
 def read_data(data_file,delta,us,scale=1.0):
-    print " Reading the data from: %s"%data_file
+    print(" Reading the data from: %s"%data_file)
     # set the offset
     n_offset = 4
     n_tag = 1
@@ -160,8 +143,16 @@ def set_plot_style(logx,logy,delta,value_name):
     ax = figure.add_subplot(111)
     ax.set_xlabel('Date')
     ax.set_ylabel('Number of %s'%value_name)
+    if relative:
+        ax.set_ylabel('Population percentage of %s'%(value_name))
     if delta:
-        ax.set_ylabel('Number of New %s / day'%value_name)
+        ax.set_ylabel('Number of new %s / day'%(value_name))
+        if combine > 1:
+            ax.set_ylabel('Number of new %s / %d days'%(value_name,combine))
+        if relative:
+            ax.set_ylabel('Population percentage of new %s / day'%(value_name))
+            if combine > 1:
+                ax.set_ylabel('Population percentage of new %s / %d days'%(value_name,combine))
     figure.autofmt_xdate()
     figure.subplots_adjust(bottom=0.17)
     if logx:
@@ -187,13 +178,13 @@ web_file_deaths_simus = "time_series_covid19_deaths_SIMUS.csv"
 # MAIN
 #===================================================================================================
 # Define string to explain usage of the script
-usage  = "\nUsage: covid-19_data.py --tags=tag1,tag43,tag300 [ --tmin=<first-day> --tmax=<last-day> --vmax=<nmax> --deaths --delta --logy --logx --us --mc --mc_file=<file> --quiet ]\n"
-valid = ['tags=','tmin=','tmax=','vmax=','debug','update','death','delta','logy','logx','us','sim','mc','mc_file=','quiet','help']
+usage  = "\nUsage: covid-19_data.py --tags=tag1,tag43,tag300 [ --tmin=<first-day:%Y-%m-%d> --tmax=<last-day:%Y-%m-%d> --vmax=<nmax> --deaths --delta --relative --logy --logx --quiet ]\n"
+valid = ['tags=','tmin=','tmax=','vmax=','combine=','debug','update','death','delta','relative','logy','logx','us','sim','mc','mc_file=','quiet','help']
 try:
     opts, args = getopt.getopt(sys.argv[1:], "", valid)
 except getopt.GetoptError, ex:
-    print usage
-    print str(ex)
+    print(usage)
+    print(str(ex))
     sys.exit(1)
 
 # read all command line options
@@ -201,9 +192,11 @@ tags = [ 'Germany' ]
 tmin = 0
 tmax = 0
 vmax = 0
+combine = 1
 update = False
 death = False
 delta = False
+relative = False
 logx = False
 logy = False
 us = False
@@ -213,36 +206,33 @@ mc_file = ""
 quiet = False
 for opt, arg in opts:
     if opt == "--help":
-        print usage
+        print(usage)
         sys.exit(0)
     if opt == "--debug":
         debug = True
     if opt == "--tags":
         tags = arg.split(",")
     if opt == "--tmin":
-        tmin = arg
+        tmin = pd.DatetimeIndex([arg])[0]
+        tmin = datetime.datetime.strptime(arg,'%Y-%m-%d')
     if opt == "--tmax":
-        tmax = arg
+        tmax = datetime.datetime.strptime(arg,'%Y-%m-%d')
     if opt == "--vmax":
         vmax = int(arg)
+    if opt == "--combine":
+        combine = max(1,int(arg))
     if opt == "--death":
         death = True
     if opt == "--update":
         update = True
     if opt == "--delta":
         delta = True
+    if opt == "--relative":
+        relative = True
     if opt == "--logx":
         logx = True
     if opt == "--logy":
         logy = True
-    if opt == "--us":
-        us = True
-    if opt == "--sim":
-        sim = True
-    if opt == "--mc":
-        mc = True
-    if opt == "--mc_file":
-        mc_file = arg
     if opt == "--quiet":
         quiet = True
 
@@ -251,87 +241,57 @@ value_name = 'Infected'
 if death:
     value_name = 'Deaths'
 
-if us:
-    web_file = web_file_confirmed_us
-    if death:
-        web_file = web_file_deaths_us
-elif sim:
-    web_file = web_file_confirmed_simus
-    if death:
-        web_file = web_file_deaths_simus
-else:
-    web_file = web_file_confirmed
-    if death:
-        web_file = web_file_deaths
-
-web_file_mc = web_file_confirmed_simus
-if death:
-    web_file_mc = web_file_deaths_simus
-
-if mc_file != "":
-    web_file_mc = mc_file
-
-data_url = "%s/%s/%s"%(web_site,web_dir,web_file)
-get_cmd = "wget"
-
 # deal with the input data
+data = data_ts.Data_ts()
 if update:
-    update_file(get_cmd,data_url,web_file)
-(times,values) = read_data(web_file,delta,us)
-# just in case you want MC
-if mc:
-    (times_mc,values_mc) = read_data(web_file_mc,delta,us,0.25)
+    data.update_files()
+data.load_data()
+data.combine_values(combine)
+data.summary()
 
-### # NEW - ALTERNATIVE
-### # deal with the input data
-### data = data_ts.Data_ts()
-### if update:
-###     data.update_files()
-### data.load_data()
-### times = data.times
-### if death:
-###     values = data.deceased
-### else:
-###     values = data.infected
+# create the data axis points
+times = pd.DatetimeIndex(data.times)
 
-# create the data frames and select the data from our container
-times = pd.DatetimeIndex(times)
+# want to look at deaths or infections
+if death:
+    values = data.deceased
+else:
+    values = data.infected
+
+# want to look at cummulative or deltas
+if delta:
+    for tag in tags:
+        values[tag][1:] = np.diff(values[tag])
+        values[tag][0] = 0
+
+# relative to total population in percent
+if relative:
+    for tag in tags:
+        print(" Area(%s), Population: %d"%(tag,data.population[tag]))
+        values[tag] = np.array(values[tag]) * (100./float(data.population[tag]))
+       
 # cut out relevant sub arrays
 xmin,xmax = find_xlimits(times,tmin,tmax)
+print(" %s - %s "%(xmin,xmax))
 imin,imax = trim_times_series_ids(xmin,xmax,times)
-times = times[imin:imax]
+times = pd.DatetimeIndex(times[imin:imax])
 for tag in tags:
     values[tag] = values[tag][imin:imax]
-
-if mc:
-    times_mc = pd.DatetimeIndex(times_mc)
-    # cut out relevant sub arrays
-    imin_mc,imax_mc = trim_times_series_ids(tmin,tmax,times_mc)
-    times_mc = times_mc[imin_mc:imax_mc]
-    for tag in tags:
-        values_mc[tag] = values_mc[tag][imin_mc:imax_mc]
-
-    # calculate the chi2
-    imin,imax = find_xoverlap(times,times_mc)
-    for tag in tags:
-        chi2 = chi2(imin,imax,values[tag],values_mc[tag])
-        print " Chi2: %f"%chi2
-
+    
 # prepare the plot
 set_plot_style(logx,logy,delta,value_name)
 
 # plot
 for tag in tags:
-    plt.errorbar(times, values[tag], yerr=np.sqrt(values[tag]), marker='o', label=tag)
-    if mc:
-        plt.errorbar(times_mc, values_mc[tag], yerr=0, label='MC')
-
+    #plt.errorbar(times, values[tag], yerr=np.sqrt(values[tag]), marker='o', label=tag)
+    plt.plot(times, values[tag], marker='o', label=tag)
 
 if vmax != 0:
     ymax = vmax
     plt.ylim(0,ymax)
 
-plt.xlim(xmin,xmax)
+delta = 0.02*(xmax-xmin)
+plt.xlim(xmin-delta,xmax+delta)
 plt.legend(frameon=False)
 if not quiet:
     plt.show()
