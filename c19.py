@@ -144,15 +144,15 @@ def set_plot_style(logx,logy,delta,value_name):
     ax.set_xlabel('Date')
     ax.set_ylabel('Number of %s'%value_name)
     if relative:
-        ax.set_ylabel('Population percentage of %s'%(value_name))
+        ax.set_ylabel('Pop. percentage of %s [%%]'%(value_name))
     if delta:
         ax.set_ylabel('Number of new %s / day'%(value_name))
         if combine > 1:
             ax.set_ylabel('Number of new %s / %d days'%(value_name,combine))
         if relative:
-            ax.set_ylabel('Population percentage of new %s / day'%(value_name))
+            ax.set_ylabel('Pop. percentage of new %s / day [%%]'%(value_name))
             if combine > 1:
-                ax.set_ylabel('Population percentage of new %s / %d days'%(value_name,combine))
+                ax.set_ylabel('Pop. percentage of new %s / %d days [%%]'%(value_name,combine))
     figure.autofmt_xdate()
     figure.subplots_adjust(bottom=0.17)
     if logx:
@@ -188,7 +188,7 @@ except getopt.GetoptError, ex:
     sys.exit(1)
 
 # read all command line options
-tags = [ 'Germany' ]
+tags = [ 'Massachusetts', 'Illinois','Switzerland','Germany' ]
 tmin = 0
 tmax = 0
 vmax = 0
@@ -242,7 +242,7 @@ if death:
     value_name = 'Deaths'
 
 # deal with the input data
-data = data_ts.Data_ts()
+data = data_ts.Data_ts("%s/data"%(os.environ.get('KRONE_BASE')))
 if update:
     data.update_files()
 data.load_data()

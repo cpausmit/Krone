@@ -24,7 +24,7 @@ class Data_ts:
     #-----------------------------------------------------------------------------------------------
     # constructor
     #-----------------------------------------------------------------------------------------------
-    def __init__(self):
+    def __init__(self,data_dir="data"):
         self.web_site = "https://raw.githubusercontent.com"
         self.web_dir = "CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series"
         self.input_files_infected = [
@@ -41,6 +41,7 @@ class Data_ts:
 #        ]
 
         self.nadd = 1
+        self.data_dir = data_dir
         self.times = []
         self.population = {}
         self.infected = {}
@@ -61,9 +62,8 @@ class Data_ts:
     def update_files(self):
         print(" Update the data files")
         for f in self.input_files_infected+self.input_files_deceased:
-            #print(f)
-            #print(" -> %s"%(f))
-            cmd = "wget %s/%s/%s -O data/%s >& /dev/null"%(self.web_site,self.web_dir,f,f)
+            cmd = "wget %s/%s/%s -O %s/data/%s >& /dev/null"\
+                %(self.web_site,self.web_dir,f,self.data_dir,f)
             os.system(cmd)
         return
 
@@ -100,7 +100,7 @@ class Data_ts:
     def read_file(self,data_file,values,population):
         print(" Reading the data -- from: %s"%data_file)
         # loop the file
-        with open("data/%s"%data_file,'r') as csvfile:
+        with open("%s/%s"%(self.data_dir,data_file),'r') as csvfile:
             ts_file = csv.reader(csvfile, delimiter=',')
             first = True
             n_population = -1
@@ -165,7 +165,7 @@ class Data_ts:
     def read_file_pop(self,data_file,population):
         print(" Reading the population data -- from: %s"%data_file)
         # loop the file
-        with open("data/%s"%data_file,'r') as csvfile:
+        with open("%s/%s"%(self.data_dir,data_file),'r') as csvfile:
             ts_file = csv.reader(csvfile, delimiter=',')
             for row in ts_file:
                 if len(row) > 0 and not row[0].startswith('#'):
