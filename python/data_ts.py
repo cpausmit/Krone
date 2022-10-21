@@ -59,7 +59,6 @@ class Data_ts:
     #-----------------------------------------------------------------------------------------------
     # download new version of the files
     #-----------------------------------------------------------------------------------------------
-<<<<<<< HEAD
     def update_files(self,quiet=False):
         if not quiet:
             print(" Update the data files")
@@ -68,20 +67,12 @@ class Data_ts:
                 %(self.web_site,self.web_dir,f,self.data_dir,f)
             if not quiet:
                 print(" Updating: %s"%(cmd))
-=======
-    def update_files(self):
-        print(" Update the data files")
-        for f in self.input_files_infected+self.input_files_deceased:
-            cmd = "wget %s/%s/%s -O %s/data/%s >& /dev/null"\
-                %(self.web_site,self.web_dir,f,self.data_dir,f)
->>>>>>> 5daecf49b843eb493eb878efaed4a74c14c030ee
             os.system(cmd)
         return
 
     #-----------------------------------------------------------------------------------------------
     # load all data files
     #-----------------------------------------------------------------------------------------------
-<<<<<<< HEAD
     def load_data(self,quiet=False):
         if not quiet:
             print(" Load all data from files")
@@ -89,18 +80,8 @@ class Data_ts:
             self.read_file(f,self.infected,self.population,quiet)
         for f in self.input_files_deceased:
             self.read_file(f,self.deceased,self.population,quiet)
-        
+            
         self.read_file_pop("populations.csv",self.population,quiet)
-=======
-    def load_data(self):
-        print(" Load all data from files")
-        for f in self.input_files_infected:
-            self.read_file(f,self.infected,self.population)
-        for f in self.input_files_deceased:
-            self.read_file(f,self.deceased,self.population)
-        
-        self.read_file_pop("populations.csv",self.population)
->>>>>>> 5daecf49b843eb493eb878efaed4a74c14c030ee
             
         return
 
@@ -120,41 +101,25 @@ class Data_ts:
     #-----------------------------------------------------------------------------------------------
     # load one file
     #-----------------------------------------------------------------------------------------------
-<<<<<<< HEAD
     def read_file(self,data_file,values,population,quiet=False):
         if not quiet:
             print(" Reading the data -- from: %s"%data_file)
-=======
-    def read_file(self,data_file,values,population):
-        print(" Reading the data -- from: %s"%data_file)
->>>>>>> 5daecf49b843eb493eb878efaed4a74c14c030ee
         # loop the file
         with open("%s/%s"%(self.data_dir,data_file),'r') as csvfile:
             ts_file = csv.reader(csvfile, delimiter=',')
             first = True
+            pop_local = {}
             n_population = -1
             for row in ts_file:
                 if first:
                     first = False
                     n_tag, n_offset = self.find_format(row)
                     tmp = row[n_offset:]
-<<<<<<< HEAD
                     # for whatever reason the 'death' file also includes a column with population?!
                     if 'Population' in tmp[0]:
                         n_population = n_offset
                         n_offset += 1
                         tmp = row[n_offset:]
-=======
-                    ## print(tmp)
-                    # for whatever reason the 'death' file also includes a column with population?!
-                    if 'Population' in tmp[0]:
-                        ## print(" Offsetting")
-                        n_population = n_offset
-                        n_offset += 1
-                        tmp = row[n_offset:]
-                    #print("Range: [%s, %s]"%(tmp[0],tmp[-1]))
-
->>>>>>> 5daecf49b843eb493eb878efaed4a74c14c030ee
                     if len(self.times) == 0:
                         # take those times
                         self.times = tmp
@@ -188,7 +153,6 @@ class Data_ts:
     
                 values[tag] = series
                 if n_population != -1:
-                    #print(" Pop: %s %s"%(tag,row[n_population]))
                     if tag in population:
                         population[tag] += int(row[n_population])
                     else:
@@ -199,24 +163,16 @@ class Data_ts:
     #-----------------------------------------------------------------------------------------------
     # load external population file
     #-----------------------------------------------------------------------------------------------
-<<<<<<< HEAD
     def read_file_pop(self,data_file,population,quiet=False):
         if not quiet:
             print(" Reading the population data -- from: %s"%data_file)
-=======
-    def read_file_pop(self,data_file,population):
-        print(" Reading the population data -- from: %s"%data_file)
->>>>>>> 5daecf49b843eb493eb878efaed4a74c14c030ee
         # loop the file
         with open("%s/%s"%(self.data_dir,data_file),'r') as csvfile:
             ts_file = csv.reader(csvfile, delimiter=',')
             for row in ts_file:
+                print(row)
                 if len(row) > 0 and not row[0].startswith('#'):
-<<<<<<< HEAD
                     tag = row[1].strip()
-=======
-                    tag = row[1].replace(' ','')
->>>>>>> 5daecf49b843eb493eb878efaed4a74c14c030ee
                     n = int(row[2].replace(' ',''))
                     population[tag] = n
         return
@@ -254,7 +210,6 @@ class Data_ts:
             self.deceased[tag] = dec[::-1]
             
         return
-<<<<<<< HEAD
 
     def rolling_values(self,nroll=7):
 
@@ -280,6 +235,4 @@ class Data_ts:
             
             self.infected[tag] = infs
             #self.deceased[tag] = decs
-    
-=======
->>>>>>> 5daecf49b843eb493eb878efaed4a74c14c030ee
+            
