@@ -170,7 +170,6 @@ class Data_ts:
         with open("%s/%s"%(self.data_dir,data_file),'r') as csvfile:
             ts_file = csv.reader(csvfile, delimiter=',')
             for row in ts_file:
-                print(row)
                 if len(row) > 0 and not row[0].startswith('#'):
                     tag = row[1].strip()
                     n = int(row[2].replace(' ',''))
